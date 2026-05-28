@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClinicaMed - Tra cứu nhanh thuốc Gây mê Hồi sức</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for modern clinic look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white text-indigo-700 p-2 rounded-xl shadow-md">
+                    <i data-lucide="stethoscope" class="w-6 h-6 text-indigo-700"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
+                        ClinicaMed <span class="bg-rose-500 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full text-white animate-pulse">Cấp cứu - Gây mê</span>
+                    </h1>
+                    <p class="text-xs text-indigo-100 font-medium">Cẩm nang tra cứu liều lượng & dược lý lâm sàng nhanh</p>
+                </div>
+            </div>
+            <!-- Weight Calculator Widget inside Header -->
+            <div class="flex items-center bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 shadow-inner w-full sm:w-auto">
+                <div class="flex items-center gap-2 text-white">
+                    <i data-lucide="weight" class="w-4 h-4 text-emerald-300"></i>
+                    <span class="text-xs font-semibold whitespace-nowrap">Cân nặng BN:</span>
+                </div>
+                <input type="number" id="globalWeight" value="60" min="1" max="250" 
+                    class="w-16 ml-2 bg-slate-900/40 text-white font-bold text-center rounded border border-indigo-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 py-0.5 text-sm"
+                    oninput="updateCalculations(this.value)">
+                <span class="text-xs font-bold text-emerald-300 ml-1.5">kg</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Column: Search, Filters & Drug Cards List -->
+        <div class="w-full lg:w-5/12 flex flex-col gap-4">
+            
+            <!-- Quick Search Bar -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3.5 top-3.5 w-5 h-5 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Nhập tên hoạt chất cần tìm..." 
+                        class="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                        oninput="handleSearch()">
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-3.5 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <!-- Quick Fast-Action Buttons -->
+                <div class="flex gap-2 mt-3 overflow-x-auto pb-1">
+                    <button onclick="toggleEmergencyFilter()" id="emergencyBtn" 
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold rounded-lg border border-rose-200 transition whitespace-nowrap">
+                        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-600"></i>
+                        Ưu tiên Hồi sức Cấp cứu (ACLS)
+                    </button>
+                    <button onclick="toggleFavoriteFilter()" id="favoriteFilterBtn" 
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-lg border border-amber-200 transition whitespace-nowrap">
+                        <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i>
+                        Đã đánh dấu (<span id="favCount">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Tabs/Filters -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Nhóm tác dụng chính
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5" id="categoryGrid">
+                    <!-- Dynamic categories will be generated here -->
+                </div>
+            </div>
+
+            <!-- Drug List Counter -->
+            <div class="flex justify-between items-center px-1">
+                <span class="text-xs font-bold text-slate-500 uppercase" id="drugCountLabel">Danh sách thuốc (0)</span>
+                <span class="text-xs text-indigo-600 font-medium cursor-pointer hover:underline" onclick="resetAllFilters()">Xóa tất cả bộ lọc</span>
+            </div>
+
+            <!-- Drug List Container -->
+            <div class="flex-grow overflow-y-auto max-h-[500px] lg:max-h-[calc(100vh-320px)] space-y-2.5 pr-1" id="drugList">
+                <!-- Drug cards will be injected here via JS -->
+            </div>
+        </div>
+
+        <!-- Right Column: Drug Detailed View & Live Dose Calculator -->
+        <div class="w-full lg:w-7/12">
+            <div class="sticky top-20 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden min-h-[400px] flex flex-col" id="detailContainer">
+                
+                <!-- Welcome/Instruction Screen (Shows when no drug is selected) -->
+                <div id="welcomeScreen" class="flex-grow flex flex-col items-center justify-center text-center p-8 space-y-4">
+                    <div class="w-20 h-20 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 animate-bounce">
+                        <i data-lucide="clipboard-list" class="w-10 h-10"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Tra cứu nhanh Lâm sàng</h3>
+                        <p class="text-sm text-slate-500 max-w-md mt-1">Chọn một loại thuốc ở danh sách bên trái hoặc nhập tên tìm kiếm để xem liều lượng chi tiết, thời gian khởi phát, duy trì, và chống chỉ định.</p>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3.5 max-w-md text-left">
+                        <h4 class="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM
+                        </h4>
+                        <p class="text-[11px] text-amber-700 leading-relaxed">
+                            Thông tin trong ứng dụng chỉ mang tính chất tham khảo học tập và hỗ trợ trí nhớ nhanh. Bác sĩ lâm sàng cần chịu trách nhiệm hoàn toàn đối với y lệnh điều trị thực tế dựa trên tình trạng cụ thể của bệnh nhân và hướng dẫn chính thức của bệnh viện.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Detailed Drug Content Viewer -->
+                <div id="detailView" class="hidden flex-col h-full">
+                    <!-- Detail Header -->
+                    <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-6 text-white relative">
+                        <!-- Top actions -->
+                        <div class="flex justify-between items-start mb-3">
+                            <span id="detailCategoryBadge" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/20">
+                                Nhóm thuốc
+                            </span>
+                            <div class="flex gap-2">
+                                <button onclick="toggleFavoriteActive()" id="detailFavBtn" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition text-white" title="Yêu thích">
+                                    <i data-lucide="star" class="w-5 h-5"></i>
+                                </button>
+                                <button onclick="closeDetailMobile()" class="lg:hidden p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition text-white">
+                                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Drug Names -->
+                        <div>
+                            <h2 id="detailGenericName" class="text-2xl font-black tracking-tight">Tên thuốc</h2>
+                        </div>
+                    </div>
+
+                    <!-- Dose Calculator Widget (Sticky under header) -->
+                    <div class="bg-emerald-50 border-b border-emerald-100 p-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="calculator" class="w-4 h-4 text-emerald-600"></i>
+                                <h3 class="text-xs font-bold uppercase text-emerald-800 tracking-wider">Máy tính liều nhanh theo cân nặng</h3>
+                            </div>
+                            <span id="calcWeightLabel" class="text-xs font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded">60 kg</span>
+                        </div>
+                        <div id="calcResults" class="space-y-2">
+                            <!-- Calculated doses are dynamically outputted here -->
+                        </div>
+                    </div>
+
+                    <!-- Interactive Syringe Pump Calculator Widget (Continuous Infusions) -->
+                    <div id="syringePumpSection" class="hidden bg-sky-50/60 border-b border-sky-100 p-4 space-y-3.5">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="activity" class="w-4 h-4 text-sky-600 animate-pulse"></i>
+                                <h3 class="text-xs font-extrabold uppercase text-sky-800 tracking-wider">Cấu hình pha & Tốc độ Bơm tiêm điện</h3>
+                            </div>
+                            <span class="text-[10px] font-bold bg-sky-600 text-white px-2 py-0.5 rounded">mL/giờ</span>
+                        </div>
+
+                        <!-- Presets / Quick Recipes -->
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Công thức pha đề xuất:</span>
+                            <div id="pumpPresetsContainer" class="flex flex-wrap gap-1.5">
+                                <!-- Presets generated here -->
+                            </div>
+                        </div>
+
+                        <!-- Inputs Grid -->
+                        <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-sky-100/80 shadow-xs">
+                            <!-- Drug mass & volume -->
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase">Hàm lượng thuốc pha</label>
+                                    <div class="flex items-center mt-1">
+                                        <input type="number" id="pumpAmountInput" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-500" oninput="recalculatePumpRate()">
+                                        <span id="pumpAmountUnitLabel" class="text-xs font-bold text-slate-500 ml-1.5">mg</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase">Thể tích dung dịch</label>
+                                    <div class="flex items-center mt-1">
+                                        <input type="number" id="pumpVolumeInput" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-500" oninput="recalculatePumpRate()">
+                                        <span class="text-xs font-bold text-slate-500 ml-1.5">mL</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live computed concentration & calculated speed output -->
+                            <div class="bg-gradient-to-br from-sky-950 to-indigo-950 text-white rounded-lg p-3 flex flex-col justify-between shadow-inner">
+                                <div class="text-center">
+                                    <span class="block text-[8px] font-bold text-sky-300 uppercase tracking-wider">Nồng độ sau pha</span>
+                                    <span id="pumpConcLabel" class="text-xs font-extrabold text-white leading-none block mt-1">-</span>
+                                </div>
+                                <div class="text-center pt-2 border-t border-white/10">
+                                    <span class="block text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">Tốc độ chạy máy</span>
+                                    <div class="flex items-baseline justify-center gap-1 mt-0.5">
+                                        <span id="pumpResultValue" class="text-2xl font-black tracking-tight text-white">0.0</span>
+                                        <span class="text-[10px] font-extrabold text-emerald-400">mL/h</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Dose Controller Slider -->
+                        <div class="space-y-1.5 bg-white p-3 rounded-xl border border-sky-100/80 shadow-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Liều duy trì đích</span>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" step="any" id="pumpDoseInput" class="w-16 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs font-bold text-center text-sky-700" oninput="syncPumpSliderFromInput()">
+                                    <span id="pumpDoseUnitLabel" class="text-[10px] font-bold text-slate-500">mcg/kg/phút</span>
+                                </div>
+                            </div>
+                            <input type="range" id="pumpDoseSlider" class="w-full accent-sky-600" oninput="syncPumpInputFromSlider()">
+                        </div>
+                    </div>
+
+                    <!-- Scrollable details body -->
+                    <div class="flex-grow overflow-y-auto p-6 space-y-5">
+                        <!-- Clinical Times (Grid) -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Khởi phát</span>
+                                <span id="detailOnset" class="text-xs font-bold text-slate-800">-</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Thời gian tác dụng</span>
+                                <span id="detailDuration" class="text-xs font-bold text-slate-800">-</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Lặp liều</span>
+                                <span id="detailRedose" class="text-xs font-bold text-slate-800">-</span>
+                            </div>
+                        </div>
+
+                        <!-- Standard Induction Dose -->
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500"></i> Liều khởi mê / Liều tấn công
+                            </h4>
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 text-xs font-medium text-slate-700 leading-relaxed" id="detailInductionDose">
+                                -
+                            </div>
+                        </div>
+
+                        <!-- Standard Maintenance Dose -->
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                <i data-lucide="repeat" class="w-3.5 h-3.5 text-teal-500"></i> Liều duy trì
+                            </h4>
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 text-xs font-medium text-slate-700 leading-relaxed" id="detailMaintenanceDose">
+                                -
+                            </div>
+                        </div>
+
+                        <!-- Contraindications -->
+                        <div>
+                            <h4 class="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i> Chống chỉ định
+                            </h4>
+                            <div class="bg-rose-50 border border-rose-100 p-3.5 rounded-xl text-xs font-medium text-rose-700 leading-relaxed" id="detailContraindications">
+                                -
+                            </div>
+                        </div>
+
+                        <!-- Clinical Notes -->
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                <i data-lucide="book-open" class="w-3.5 h-3.5 text-indigo-500"></i> Lưu ý lâm sàng đặc biệt
+                            </h4>
+                            <div class="bg-amber-50/50 border border-amber-100 p-3.5 rounded-xl text-xs font-medium text-slate-700 leading-relaxed" id="detailClinicalNotes">
+                                -
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Medical Resources Footer -->
+    <footer class="bg-slate-950 text-slate-400 py-6 border-t border-slate-900 mt-auto text-center text-xs space-y-2">
+        <p class="font-semibold text-slate-300">ClinicaMed © 2026 - Công cụ Gây Mê & Hồi Sức Tích Cực</p>
+        <p class="max-w-2xl mx-auto px-4 text-slate-500 text-[11px]">
+            Hệ thống dữ liệu dựa trên phác đồ Gây mê Hồi sức (Bộ Y Tế Việt Nam), tài liệu Miller's Anesthesia, và cẩm nang gây mê ICU quốc tế. Luôn kiểm chứng liều lượng đối với các trường hợp đặc biệt (suy thận, gan, người già, trẻ em).
+        </p>
+    </footer>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // Common clinical drug database
+        const DRUG_DATABASE = [
+            // Giảm đau non-opioid & NSAIDs
+            {
+                id: "paracetamol",
+                name: "Paracetamol (Acetaminophen)",
+                category: "giamdau",
+                categoryLabel: "Giảm đau",
+                onset: "5 - 15 phút (IV), 30 - 60 phút (uống)",
+                duration: "4 - 6 giờ",
+                redose: "Mỗi 4 - 6 giờ (Tối đa 4g/ngày)",
+                inductionDose: "1g truyền tĩnh mạch chậm trong 15 phút (cho người lớn >50kg). Liều tính theo cân nặng: 15 mg/kg mỗi lần.",
+                maintenanceDose: "15 mg/kg mỗi 4 - 6 giờ truyền tĩnh mạch hoặc uống. Không vượt quá 4g/ngày hoặc 60 mg/kg/ngày.",
+                contraindications: "Mẫn cảm với paracetamol, suy gan nặng, suy tế bào gan mất bù.",
+                clinicalNotes: "Truyền tĩnh mạch chậm trong ít nhất 15 phút. Cực kỳ thận trọng ở bệnh nhân nghiện rượu, suy dinh dưỡng, mất nước nặng. Quá liều gây hoại tử tế bào gan cấp tính (giải độc bằng N-acetylcysteine).",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 15,
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "diclofenac",
+                name: "Diclofenac",
+                category: "giamdau",
+                categoryLabel: "Giảm đau",
+                onset: "20 - 30 phút (IM/IV)",
+                duration: "6 - 8 giờ",
+                redose: "Mỗi 8 - 12 giờ",
+                inductionDose: "75 mg tiêm bắp sâu (IM) hoặc truyền tĩnh mạch chậm (phải pha loãng trong Glucose 5% hoặc NaCl 0.9% có đệm NaHCO3) trong 30-120 phút.",
+                maintenanceDose: "Tối đa 150 mg/ngày (chia 2 lần). Chỉ nên dùng ngắn ngày (2-3 ngày) trong giai đoạn đau cấp tính.",
+                contraindications: "Loét dạ dày tá tràng tiến triển, xuất huyết tiêu hóa, suy thận nặng, suy gan nặng, suy tim sung huyết nặng (NYHA II-IV), hen phế quản co thắt do NSAIDs, quý 3 thai kỳ.",
+                clinicalNotes: "Khi tiêm tĩnh mạch, bắt buộc phải pha loãng và truyền thật chậm để tránh kích ứng mạch máu dữ dội. Có nguy cơ tăng chảy máu do ức chế ngưng tập tiểu cầu tạm thời. Theo dõi sát chức năng thận.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 1, // ~75mg cho bệnh nhân nặng trung bình
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "ketorolac",
+                name: "Ketorolac",
+                category: "giamdau",
+                categoryLabel: "Giảm đau",
+                onset: "10 - 30 phút (IV/IM)",
+                duration: "4 - 6 giờ",
+                redose: "Mỗi 6 giờ",
+                inductionDose: "15 - 30 mg IV hoặc IM (giảm liều 15 mg ở người lớn tuổi >65 tuổi hoặc cân nặng <50 kg).",
+                maintenanceDose: "15 - 30 mg mỗi 6 giờ. Tối đa 120 mg/ngày ở người trẻ khỏe mạnh, hoặc 60 mg/ngày ở người cao tuổi/suy thận nhẹ.",
+                contraindications: "Loét dạ dày tá tràng tiến triển, xuất huyết tiêu hóa, suy thận nặng hoặc có nguy cơ suy thận do giảm thể tích tuần hoàn, rối loạn đông máu, chuẩn bị phẫu thuật có nguy cơ chảy máu cao, mẫn cảm với NSAIDs.",
+                clinicalNotes: "NSAIDs có tác dụng giảm đau rất mạnh, đặc biệt hiệu quả cho đau sau phẫu thuật xương khớp và phần mềm lớn. Giới hạn thời gian sử dụng tối đa là 5 ngày liên tục để phòng tránh suy thận cấp và xuất huyết tiêu hóa.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.5, // ~30mg cho BN 60kg
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "nefopam",
+                name: "Nefopam",
+                category: "giamdau",
+                categoryLabel: "Giảm đau",
+                onset: "15 - 20 phút (IV/IM)",
+                duration: "4 - 6 giờ",
+                redose: "Mỗi 4 - 6 giờ",
+                inductionDose: "20 mg tiêm bắp (IM) hoặc truyền tĩnh mạch chậm trong ít nhất 30-60 phút. Không được tiêm bolus tĩnh mạch IV nhanh.",
+                maintenanceDose: "20 mg mỗi 4-6 giờ truyền tĩnh mạch chậm. Tối đa 120 mg/ngày.",
+                contraindications: "Co giật hoặc tiền sử động kinh, glocom góc đóng, phì đại tuyến tiền liệt có nguy cơ bí tiểu, đang dùng thuốc ức chế MAO (MAOIs). Trẻ em dưới 15 tuổi.",
+                clinicalNotes: "Giảm đau trung ương không thuộc nhóm opioid và không có hoạt tính kháng viêm hay hạ sốt. Rất hiệu quả trong kiểm soát run sau mổ (shivering) như một liệu pháp thay thế Pethidine. Có thể gây nhịp tim nhanh, vã mồ hôi, khô miệng.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.3, // ~20mg cho BN 60kg
+                    maintenanceFactor: 0
+                }
+            },
+
+            // Opioids
+            {
+                id: "fentanyl",
+                name: "Fentanyl",
+                category: "opioid",
+                categoryLabel: "Opioids",
+                onset: "1 - 2 phút",
+                duration: "30 - 60 phút",
+                redose: "Mỗi 30 - 45 phút",
+                inductionDose: "1 - 3 mcg/kg tiêm tĩnh mạch (IV) chậm.",
+                maintenanceDose: "0.5 - 2 mcg/kg/giờ IV ngắt quãng hoặc truyền tĩnh mạch liên tục 1 - 3 mcg/kg/giờ.",
+                contraindications: "Mẫn cảm với opioid, suy hô hấp nặng không có kiểm soát đường thở, chấn thương sọ não chưa kiểm soát được hô hấp.",
+                clinicalNotes: "Có thể gây co thắt lồng ngực (bịt ngực gỗ - chest wall rigidity) nếu tiêm quá nhanh liều cao. Giải độc đặc hiệu bằng Naloxone.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mcg",
+                    inductionFactor: 2, // 2 mcg/kg
+                    maintenanceFactor: 1.5 // 1.5 mcg/kg/hr
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn 1 ống (10 mcg/mL)", amount: 0.5, amountUnit: "mg", volume: 50, doseUnit: "mcg/kg/giờ", defaultDose: 1.5, minDose: 0.2, maxDose: 4, stepDose: 0.1 }
+                ]
+            },
+            {
+                id: "morphine",
+                name: "Morphine",
+                category: "opioid",
+                categoryLabel: "Opioids",
+                onset: "15 - 30 phút (IV), 30 - 60 phút (IM)",
+                duration: "4 - 5 giờ",
+                redose: "Mỗi 4 giờ",
+                inductionDose: "Liều tấn công cấp cứu/giảm đau mạnh: 0.05 - 0.1 mg/kg IV chậm (trong 5-10 phút).",
+                maintenanceDose: "Duy trì giảm đau hậu phẫu: 0.8 - 10 mg/giờ truyền tĩnh mạch liên tục hoặc PCA.",
+                contraindications: "Suy hô hấp cấp tính, hen phế quan nặng, suy gan nặng, chấn thương sọ não nặng tăng áp lực nội sọ.",
+                clinicalNotes: "Gây phóng thích histamine mạnh hơn Fentanyl (nguy cơ co thắt phế quản, hạ huyết áp, ngứa). Cần giảm liều ở người cao tuổi và suy thận.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.1, // 0.1 mg/kg
+                    maintenanceFactor: 0.05 // 0.05 mg/kg
+                }
+            },
+            {
+                id: "sufentanil",
+                name: "Sufentanil",
+                category: "opioid",
+                categoryLabel: "Opioids",
+                onset: "1 - 3 phút",
+                duration: "20 - 40 phút",
+                redose: "Mỗi 20 - 30 phút",
+                inductionDose: "0.2 - 0.6 mcg/kg IV chậm cùng thuốc gây mê tĩnh mạch.",
+                maintenanceDose: "0.1 - 0.3 mcg/kg IV ngắt quãng hoặc truyền liên tục 0.1 - 0.5 mcg/kg/giờ.",
+                contraindications: "Nhược cơ (chống chỉ định tương đối), suy hô hấp chưa kiểm soát đường thở.",
+                clinicalNotes: "Mạnh gấp 5-10 lần Fentanyl. Ức chế hô hấp kéo dài và sâu hơn Fentanyl, tác động ổn định huyết động rất tốt.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mcg",
+                    inductionFactor: 0.4,
+                    maintenanceFactor: 0.2
+                },
+                pumpPresets: [
+                    { name: "Pha loãng chuẩn (1 mcg/mL)", amount: 50, amountUnit: "mcg", volume: 50, doseUnit: "mcg/kg/giờ", defaultDose: 0.2, minDose: 0.05, maxDose: 1.0, stepDose: 0.01 },
+                    { name: "Pha đậm đặc (2 mcg/mL)", amount: 100, amountUnit: "mcg", volume: 50, doseUnit: "mcg/kg/giờ", defaultDose: 0.2, minDose: 0.05, maxDose: 1.0, stepDose: 0.01 }
+                ]
+            },
+            {
+                id: "meperidine",
+                name: "Meperidine (Pethidine)",
+                category: "opioid",
+                categoryLabel: "Opioids",
+                onset: "1 - 5 phút (IV), 10 - 15 phút (IM)",
+                duration: "2 - 4 giờ",
+                redose: "Mỗi 3 - 4 giờ",
+                inductionDose: "Giảm đau/Tiền mê: 0.5 - 1 mg/kg IV chậm hoặc IM. Điều trị run sau mổ (shivering): 12.5 - 25 mg IV chậm.",
+                maintenanceDose: "Truyền tĩnh mạch liên tục (ít dùng): 10 - 20 mg/giờ hoặc tiêm ngắt quãng tùy theo đáp ứng lâm sàng.",
+                contraindications: "Mẫn cảm với opioid, đang dùng hoặc đã dùng thuốc ức chế MAO (MAOIs) trong vòng 14 ngày (nguy cơ hội chứng serotonin kịch phát), suy hô hấp nặng.",
+                clinicalNotes: "Tránh dùng kéo dài hoặc liều cao do tích lũy chất chuyển hóa normeperidine gây độc thần kinh (co giật). Cực kỳ hiệu quả trong kiểm soát run sau mổ (shivering) ở liều thấp.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.5, // 0.5 mg/kg
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "tramadol",
+                name: "Tramadol",
+                category: "opioid",
+                categoryLabel: "Opioids",
+                onset: "10 - 20 phút (IV), 30 - 60 phút (uống)",
+                duration: "4 - 6 giờ",
+                redose: "Mỗi 4 - 6 giờ",
+                inductionDose: "Giảm đau hậu phẫu/cấp tính: 50 - 100 mg IV chậm trong ít nhất 2 - 3 phút (tối đa 400 mg/ngày).",
+                maintenanceDose: "Duy trì giảm đau hậu phẫu: Truyền tĩnh mạch liên tục 10 - 20 mg/giờ hoặc uống 50 - 100 mg mỗi 6 giờ.",
+                contraindications: "Ngộ độc cấp tính với rượu, thuốc ngủ, opioid khác; động kinh chưa kiểm soát; đang dùng MAOIs.",
+                clinicalNotes: "Gây tác dụng phụ buồn nôn và nôn rất mạnh nếu tiêm nhanh (cần tiêm tĩnh mạch cực chậm hoặc pha loãng truyền dịch). Có nguy cơ gây hội chứng Serotonin khi phối hợp với thuốc chống trầm cảm.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 1.5, // ~100mg cho BN 60kg
+                    maintenanceFactor: 0
+                }
+            },
+
+            // Thuốc mê tĩnh mạch
+            {
+                id: "propofol",
+                name: "Propofol",
+                category: "metinhmach",
+                categoryLabel: "Thuốc mê tĩnh mạch",
+                onset: "30 - 45 giây",
+                duration: "5 - 10 phút",
+                redose: "Liên tục truyền",
+                inductionDose: "1.5 - 2.5 mg/kg IV chậm (ở người lớn khoẻ mạnh), giảm liều ở người già (1 - 1.5 mg/kg).",
+                maintenanceDose: "4 - 12 mg/kg/giờ (truyền tĩnh mạch liên tục) hoặc 100 - 200 mcg/kg/phút trong gây mê tĩnh mạch hoàn toàn (TIVA).",
+                contraindications: "Dị ứng nặng với trứng, đậu nành hoặc lecithin; sốc huyết động không kiểm soát; suy tim mất bù.",
+                clinicalNotes: "Gây hạ huyết áp rõ rệt (giãn mạch và ức chế cơ tim), đau tại vị trí tiêm (khắc phục bằng cách pha tê Lidocaine trước). Nguy cơ hội chứng truyền Propofol (PRIS) khi truyền liều cao kéo dài >48 giờ.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 2, // 2 mg/kg
+                    maintenanceFactor: 6 // 6 mg/kg/hour
+                },
+                pumpPresets: [
+                    { name: "Nguyên bản 1% (10 mg/mL)", amount: 500, amountUnit: "mg", volume: 50, doseUnit: "mg/kg/giờ", defaultDose: 6.0, minDose: 2.0, maxDose: 15.0, stepDose: 0.5 }
+                ]
+            },
+            {
+                id: "ketamine",
+                name: "Ketamine",
+                category: "metinhmach",
+                categoryLabel: "Thuốc mê tĩnh mạch",
+                onset: "30 - 60 giây (IV), 3 - 5 phút (IM)",
+                duration: "10 - 15 phút (IV), 20 - 30 phút (IM)",
+                redose: "Mỗi 10 - 15 phút",
+                inductionDose: "1 - 2 mg/kg IV hoặc 4 - 8 mg/kg IM.",
+                maintenanceDose: "0.5 - 1 mg/kg IV nhắc lại hoặc truyền tĩnh mạch liên tục 10 - 45 mcg/kg/phút (0.6 - 2.7 mg/kg/giờ).",
+                contraindications: "Tăng huyết áp nặng chưa kiểm soát, bệnh mạch vành nặng, phình động mạch chủ, chấn thương sọ não kèm tăng áp lực nội sọ (tương đối).",
+                clinicalNotes: "Mê phân ly. Kích thích giao cảm gây tăng huyết áp, tăng tần số tim, giãn phế quản rất tốt cho bệnh nhân hen phế quản/huyết động bất ổn. Gây tăng tiết đờm rãi (thường phối hợp Atropin) và ác mộng khi tỉnh (phối hợp Benzodiazepines).",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 1.5,
+                    maintenanceFactor: 1.2
+                }
+            },
+            {
+                id: "dexmedetomidine",
+                name: "Dexmedetomidine", // FIXXED: Added missing name property to avoid TypeErrors!
+                category: "metinhmach",
+                categoryLabel: "Thuốc mê tĩnh mạch",
+                onset: "5 - 10 phút (IV)",
+                duration: "1 - 2 giờ (sau khi ngừng truyền)",
+                redose: "Truyền liên tục",
+                inductionDose: "Liều nạp (Loading): 0.5 - 1 mcg/kg truyền tĩnh mạch chậm bằng bơm tiêm điện trong vòng 10 - 20 phút.",
+                maintenanceDose: "Duy trì an thần (phòng mổ hoặc ICU): 0.2 - 1.5 mcg/kg/giờ truyền tĩnh mạch liên tục.",
+                contraindications: "Block nhĩ thất cấp độ II - III (khi chưa đặt máy tạo nhịp), nhịp tim chậm xoang nghiêm trọng (<50 l/p), hạ huyết áp chưa kiểm soát.",
+                clinicalNotes: "An thần trung ương chất lượng cao, bệnh nhân dễ dàng đánh thức và hợp tác tốt khi có kích thích, hoàn toàn không gây ức chế hô hấp. Có khả năng giảm đau phối hợp, giảm run sau mổ (shivering) và ngừa mê sảng ICU. Thận trọng nguy cơ chậm nhịp tim và tụt huyết áp nếu truyền liều nạp quá nhanh.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mcg",
+                    inductionFactor: 0.5, // Tính liều nạp trung bình 0.5 mcg/kg
+                    maintenanceFactor: 0.6 // Tính liều duy trì trung bình 0.6 mcg/kg/giờ
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (4 mcg/mL)", amount: 200, amountUnit: "mcg", volume: 50, doseUnit: "mcg/kg/giờ", defaultDose: 0.6, minDose: 0.1, maxDose: 2.0, stepDose: 0.05 },
+                    { name: "Pha đậm đặc (8 mcg/mL)", amount: 400, amountUnit: "mcg", volume: 50, doseUnit: "mcg/kg/giờ", defaultDose: 0.6, minDose: 0.1, maxDose: 2.0, stepDose: 0.05 }
+                ]
+            },
+            // Benzodiazepines
+            {
+                id: "midazolam",
+                name: "Midazolam",
+                category: "benzodiazepines",
+                categoryLabel: "Benzodiazepines",
+                onset: "1.5 - 3 phút (IV)",
+                duration: "1 - 2 giờ",
+                redose: "Mỗi 1 - 2 giờ",
+                inductionDose: "An thần/tiền mê: 0.02 - 0.05 mg/kg IV. Khởi mê (phối hợp): 0.1 - 0.2 mg/kg IV chậm.",
+                maintenanceDose: "Duy trì an thần máy thở: 0.03 - 0.2 mg/kg/giờ (truyền tĩnh mạch liên tục).",
+                contraindications: "Glocom góc đóng cấp tính, nhược cơ nặng, suy hô hấp nặng không có hỗ trợ hô hấp.",
+                clinicalNotes: "Tác dụng quên ngược chiều tốt (anterograde amnesia). Thuốc ưu tiên trong an thần ICU. Giải độc bằng Flumazenil.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.05,
+                    maintenanceFactor: 0.1 // 0.1 mg/kg/hr
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (1 mg/mL)", amount: 50, amountUnit: "mg", volume: 50, doseUnit: "mg/kg/giờ", defaultDose: 0.1, minDose: 0.02, maxDose: 0.3, stepDose: 0.01 }
+                ]
+            },
+            {
+                id: "diazepam",
+                name: "Diazepam",
+                category: "benzodiazepines",
+                categoryLabel: "Benzodiazepines",
+                onset: "1 - 5 phút (IV)",
+                duration: "Kéo dài (Bán thải > 20 giờ, có chất chuyển hóa hoạt tính)",
+                redose: "Tránh lặp lại nhiều lần liên tục",
+                inductionDose: "Cắt cơn co giật / An thần: 0.1 - 0.2 mg/kg IV chậm (tốc độ không quá 5mg/phút).",
+                maintenanceDose: "Không khuyến cáo duy trì tĩnh mạch liên tục do tích lũy liều.",
+                contraindications: "Nhược cơ nặng, suy hô hấp nặng, suy gan nặng, suy thận nặng.",
+                clinicalNotes: "Ít dùng trong khởi mê hiện đại do thời gian tác dụng quá dài. Thường dùng cắt cơn co giật cơ học cấp cứu.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.15,
+                    maintenanceFactor: 0
+                }
+            },
+
+            // Thuốc giãn cơ
+            {
+                id: "rocuronium",
+                name: "Rocuronium",
+                category: "gianco",
+                categoryLabel: "Giãn cơ",
+                onset: "60 - 90 giây (nhanh nhất trong nhóm không khử cực)",
+                duration: "30 - 45 phút (liều tiêu chuẩn)",
+                redose: "Mỗi 20 - 30 phút",
+                inductionDose: "Đặt nội khí quản tiêu chuẩn: 0.6 mg/kg IV. Đặt nội khí quản nhanh (RSI): 0.9 - 1.2 mg/kg IV.",
+                maintenanceDose: "0.1 - 0.2 mg/kg IV bolus ngắt quãng hoặc truyền tĩnh mạch liên tục 5 - 12 mcg/kg/phút (0.3 - 0.7 mg/kg/giờ).",
+                contraindications: "Quá mẫn với rocuronium hoặc bromide.",
+                clinicalNotes: "Là lựa chọn thay thế hàng đầu cho Succinylcholine khi cần khởi mê nhanh (RSI). Hóa giải nhanh và hoàn toàn bằng Sugammadex ở bất kỳ thời điểm nào.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.6,
+                    maintenanceFactor: 0.4
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (2 mg/mL)", amount: 100, amountUnit: "mg", volume: 50, doseUnit: "mg/kg/giờ", defaultDose: 0.4, minDose: 0.1, maxDose: 1.5, stepDose: 0.05 },
+                    { name: "Nguyên bản 1% (10 mg/mL)", amount: 500, amountUnit: "mg", volume: 50, doseUnit: "mg/kg/giờ", defaultDose: 0.4, minDose: 0.1, maxDose: 1.5, stepDose: 0.05 }
+                ]
+            },
+            {
+                id: "succinylcholine",
+                name: "Succinylcholine",
+                category: "gianco",
+                categoryLabel: "Giãn cơ",
+                onset: "30 - 60 giây",
+                duration: "5 - 10 phút",
+                redose: "Tránh lặp lại nhiều lần (nguy cơ block pha II)",
+                inductionDose: "1 - 1.5 mg/kg IV (đặt nội khí quản cấp cứu nhanh).",
+                maintenanceDose: "Không dùng duy trì truyền liên tục.",
+                contraindications: "Tiền sử gia đình bị tăng thân nhiệt ác tính (Malignant Hyperthermia), tăng kali máu nặng, chấn thương bỏng lớn hoặc dập nát cơ nặng >24-48 giờ, bệnh nhược cơ, liệt tứ chi.",
+                clinicalNotes: "Thuốc giãn cơ khử cực duy nhất còn dùng lâm sàng. Gây giật cơ bó sợi (fasciculation) làm đau cơ sau mổ. Có thể làm tăng Kali huyết cấp tính khoảng 0.5 mEq/L.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 1.2,
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "cisatracurium",
+                name: "Cisatracurium",
+                category: "gianco",
+                categoryLabel: "Giãn cơ",
+                onset: "2 - 3 phút",
+                duration: "45 - 60 phút",
+                redose: "Mỗi 30 - 40 phút",
+                inductionDose: "0.15 - 0.2 mg/kg IV tiêu chuẩn.",
+                maintenanceDose: "0.03 mg/kg IV nhắc lại hoặc truyền liên tục 1 - 2 mcg/kg/phút (0.06 - 0.12 mg/kg/giờ).",
+                contraindications: "Mẫn cảm với thuốc và dòng atracurium.",
+                clinicalNotes: "Đào thải theo cơ chế Hofmann (tự phân hủy không phụ thuộc chức năng gan hay thận), là thuốc giãn cơ an toàn tuyệt đối cho bệnh nhân suy gan, suy thận.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.15,
+                    maintenanceFactor: 0.08
+                }
+            },
+            {
+                id: "vecuronium",
+                name: "Vecuronium",
+                category: "gianco",
+                categoryLabel: "Giãn cơ",
+                onset: "2.5 - 3 phút",
+                duration: "30 - 40 phút",
+                redose: "Mỗi 15 - 25 phút",
+                inductionDose: "0.08 - 0.1 mg/kg IV.",
+                maintenanceDose: "0.01 - 0.02 mg/kg IV nhắc lại hoặc truyền liên tục 0.8 - 1.2 mcg/kg/phút.",
+                contraindications: "Mẫn cảm với thành phần vecuronium.",
+                clinicalNotes: "Thành phần chuyển hóa hoạt tính nhẹ ở gan, đào thải chủ yếu qua mật và thận. Nên thận trọng kéo dài tác dụng ở bệnh nhân suy thận.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.1,
+                    maintenanceFactor: 0.05
+                }
+            },
+
+            // Thuốc hoá giải giãn cơ
+            {
+                id: "sugammadex",
+                name: "Sugammadex",
+                category: "hoaigiai",
+                categoryLabel: "Thuốc hoá giải giãn cơ",
+                onset: "1.5 - 3 phút",
+                duration: "Tác dụng bền vững không đảo ngược lại",
+                redose: "Không áp dụng",
+                inductionDose: "Hóa giải tức thì (sau liều Rocuronium 1.2 mg/kg): 16 mg/kg IV. Hóa giải sâu (TOF = 0, PTC >=1): 4 mg/kg IV. Hóa giải thông thường (TOF >=2): 2 mg/kg IV.",
+                maintenanceDose: "Không dùng liều duy trì.",
+                contraindications: "Suy thận nặng giai đoạn cuối (ClCr < 30 mL/phút), trẻ em dưới 2 tuổi.",
+                clinicalNotes: "Chỉ hóa giải đặc hiệu cho Rocuronium và Vecuronium (không tác dụng trên giãn cơ nhóm Benzylisoquinolinium như Cisatracurium). Làm giảm tác dụng của thuốc tránh thai nội tiết tố (cần tư vấn BN dùng biện pháp dự phòng khác trong 7 ngày sau tiêm).",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 2, // Mặc định tính liều thông thường 2mg/kg
+                    maintenanceFactor: 4 // Hiển thị thêm liều hóa giải sâu 4mg/kg
+                }
+            },
+            {
+                id: "neostigmine",
+                name: "Neostigmine",
+                category: "hoaigiai",
+                categoryLabel: "Thuốc hoá giải giãn cơ",
+                onset: "7 - 11 phút",
+                duration: "1 - 2 giờ",
+                redose: "Tránh dùng quá liều tối đa (5mg ở người lớn)",
+                inductionDose: "0.03 - 0.07 mg/kg IV chậm (luôn luôn phối hợp với Atropin để tránh tác dụng phụ Cholinergic).",
+                maintenanceDose: "Không dùng liều duy trì.",
+                contraindications: "Tắc ruột cơ học hoặc tắc nghẽn đường tiết niệu cơ học, viêm phúc mạc cấp.",
+                clinicalNotes: "Bắt buộc phối hợp với Atropin (liều 0.01 - 0.02 mg/kg hoặc tỉ lệ 1mg Atropin cho mỗi 2.5mg Neostigmine) để ngăn ngừa chậm nhịp tim dữ dội, tăng tiết đờm dãi, co thắt phế quản.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.05,
+                    maintenanceFactor: 0 // Atropin đi kèm sẽ tính riêng
+                }
+            },
+
+            // Thuốc chống loạn nhịp
+            {
+                id: "amiodarone",
+                name: "Amiodarone",
+                category: "chongloannhip",
+                categoryLabel: "Thuốc chống loạn nhịp",
+                onset: "Vài phút (IV cấp cứu)",
+                duration: "Bán thải cực dài (vài tuần)",
+                redose: "Theo phác đồ truyền",
+                inductionDose: "Cấp cứu Ngừng tuần hoàn (VF/VT mất mạch): 300 mg IV nhanh (có thể lặp lại 150 mg). Loạn nhịp nhanh ổn định: 150 mg truyền tĩnh mạch trong 10-20 phút.",
+                maintenanceDose: "Truyền duy trì: 1 mg/phút trong 6 giờ đầu (360 mg), sau đó 0.5 mg/phút trong 18 giờ tiếp theo.",
+                contraindications: "Block nhĩ thất độ II-III không có máy tạo nhịp, nhịp chậm xoang nặng, hội chứng suy nút xoang, sốc do tim.",
+                clinicalNotes: "Có thể gây hạ huyết áp và chậm nhịp tim nặng nếu truyền quá nhanh. Nên pha trong dung dịch Glucose 5% và ưu tiên truyền catheter tĩnh mạch trung tâm để tránh viêm tĩnh mạch.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 5, // Liều trung bình cấp cứu 300mg cho BN 60kg (~5mg/kg)
+                    maintenanceFactor: 0
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn 6 ống (18 mg/mL)", amount: 900, amountUnit: "mg", volume: 50, doseUnit: "mg/phút", defaultDose: 1.0, minDose: 0.1, maxDose: 2.0, stepDose: 0.1 },
+                    { name: "Pha loãng 2 ống (6 mg/mL)", amount: 300, amountUnit: "mg", volume: 50, doseUnit: "mg/phút", defaultDose: 1.0, minDose: 0.1, maxDose: 2.0, stepDose: 0.1 }
+                ]
+            },
+            {
+                id: "lidocaine-loannhip",
+                name: "Lidocaine (Chống loạn nhịp)",
+                category: "chongloannhip",
+                categoryLabel: "Thuốc chống loạn nhịp",
+                onset: "45 - 90 giây",
+                duration: "10 - 20 phút",
+                redose: "Mỗi 5 - 10 phút",
+                inductionDose: "1 - 1.5 mg/kg IV chậm cấp cứu.",
+                maintenanceDose: "Truyền tĩnh mạch liên tục duy trì: 1 - 4 mg/phút (hoặc 20 - 50 mcg/kg/phút).",
+                contraindications: "Block nhĩ thất nặng độ II-III, suy cơ tim nặng, tiền sử co giật do Lidocaine.",
+                clinicalNotes: "Thuốc chống loạn nhịp nhóm IB. Theo dõi sát dấu hiệu ngộ độc thuốc tê toàn thân (LAST) như tê môi, ù tai, co giật.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 1,
+                    maintenanceFactor: 2 // 2 mg/phút mặc định
+                }
+            },
+            {
+                id: "adenosine",
+                name: "Adenosine",
+                category: "chongloannhip",
+                categoryLabel: "Thuốc chống loạn nhịp",
+                onset: "Hầu như tức thì (vài giây)",
+                duration: "Cực ngắn (< 10 giây)",
+                redose: "Mỗi 1 - 2 phút nếu không chuyển nhịp",
+                inductionDose: "Liều đầu: 6 mg IV bolus cực nhanh trong 1-2 giây, xả nhanh dịch truyền 20ml nước muối sinh lý. Nếu không đáp ứng sau 1-2 phút: dùng tiếp liều 12 mg IV nhanh.",
+                maintenanceDose: "Không dùng liều duy trì.",
+                contraindications: "Hen phế quản nặng, co thắt phế quản, block nhĩ thất độ II-III (trừ khi có máy tạo nhịp), hội chứng suy nút xoang.",
+                clinicalNotes: "Gây block nút nhĩ thất tạm thời để cắt cơn nhịp nhanh kịch phát trên thất (SVT). Bệnh nhân sẽ có cảm giác tức ngực dữ dội, khó thở ngắn ngay sau khi tiêm thuốc (cần giải thích trước cho BN).",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.1, // Liều đầu 6mg cho người lớn trung bình
+                    maintenanceFactor: 0
+                }
+            },
+
+            // Thuốc tê
+            {
+                id: "lidocaine-local",
+                name: "Lidocaine (Thuốc tê)",
+                category: "thuocte",
+                categoryLabel: "Thuốc tê",
+                onset: "1 - 5 phút (tùy vị trí tiêm)",
+                duration: "0.5 - 2 giờ",
+                redose: "Tối đa liều giới hạn",
+                inductionDose: "Gây tê thấm / Phong bế thần kinh: Liều tối đa không Adrenaline là 4.5 mg/kg (tối đa 300mg). Liều tối đa có Adrenaline là 7 mg/kg (tối đa 500mg).",
+                maintenanceDose: "Không áp dụng duy trì.",
+                contraindications: "Dị ứng nhóm amide, block tim hoàn toàn, nhiễm trùng nặng tại vị trí chọc kim.",
+                clinicalNotes: "Có thể phối hợp truyền IV liều thấp (1 - 1.5 mg/kg/giờ) trong mổ để giảm đau đa mô thức và hỗ trợ phục hồi nhu động ruột sớm sau mổ.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 4.5, // Giới hạn liều đơn thuần
+                    maintenanceFactor: 7 // Giới hạn liều phối hợp Adrenaline
+                }
+            },
+            {
+                id: "bupivacaine",
+                name: "Bupivacaine",
+                category: "thuocte",
+                categoryLabel: "Thuốc tê",
+                onset: "5 - 10 phút (tủy sống: 2 - 5 phút)",
+                duration: "2 - 8 giờ (kéo dài)",
+                redose: "Tránh lặp lại liều cao",
+                inductionDose: "Gây tê tủy sống: 5 - 15 mg (thể tích nhỏ). Phong bế vùng / Ngoài màng cứng: tối đa 2 mg/kg (không adrenaline) hoặc 2.5 mg/kg (có adrenaline).",
+                maintenanceDose: "Duy trì ngoài màng cứng giảm đau sản khoa: 0.0625% - 0.125% truyền liên tục 4 - 10 ml/giờ.",
+                contraindications: "Dị ứng nhóm amide, shock tim, giảm thể tích tuần hoàn nặng, rối loạn đông máu nặng (chống chỉ định tuyệt đối cho gây tê tủy sống/ngoài màng cứng).",
+                clinicalNotes: "Độc tính trên tim rất cao nếu vô tình tiêm nhầm vào mạch máu (gây loạn nhịp thất trơ, ngừng tim). Cần xử trí cấp cứu ngộ độc thuốc tê ngay bằng nhũ dịch Lipid 20% (Intralipid).",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 2, // Giới hạn liều an toàn 2mg/kg
+                    maintenanceFactor: 0
+                }
+            },
+
+            // Thuốc hạ áp
+            {
+                id: "nicardipine",
+                name: "Nicardipine",
+                category: "haap",
+                categoryLabel: "Thuốc hạ áp",
+                onset: "1 - 5 phút",
+                duration: "3 - 6 giờ (giảm nhanh sau khi ngừng truyền)",
+                redose: "Chỉnh liều mỗi 5 - 15 phút",
+                inductionDose: "Thường không khuyến cáo bolus tĩnh mạch (IV). Trong cấp cứu tăng huyết áp ác tính kịch phát cực kỳ khẩn cấp: 1 - 2 mg IV chậm trong ít nhất 2 phút dưới sự theo dõi sát huyết áp liên tục.",
+                maintenanceDose: "Bắt đầu truyền tĩnh mạch liên tục bằng bơm tiêm điện với liều 3 - 5 mg/giờ. Có thể tăng dần mỗi 15 phút (mỗi lần tăng 1 - 2.5 mg/giờ) cho đến khi đạt huyết áp mục tiêu, tối đa 15 mg/giờ.",
+                contraindications: "Hẹp van động mạch chủ nặng (gây tụt huyết áp nghiêm trọng có thể dẫn đến ngừng tim), suy tim sung huyết mất bù cấp tính.",
+                clinicalNotes: "Thuốc có tính acid rất cao, bắt buộc ưu tiên truyền qua tĩnh mạch lớn hoặc catheter tĩnh mạch trung tâm để phòng tránh biến chứng viêm tĩnh mạch huyết khối dữ dội.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mg/giờ",
+                    inductionFactor: 0,
+                    maintenanceFactor: 0.05
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (0.2 mg/mL)", amount: 10, amountUnit: "mg", volume: 50, doseUnit: "mg/giờ", defaultDose: 3.0, minDose: 1.0, maxDose: 15.0, stepDose: 0.5 },
+                    { name: "Pha đậm đặc (0.4 mg/mL)", amount: 20, amountUnit: "mg", volume: 50, doseUnit: "mg/giờ", defaultDose: 3.0, minDose: 1.0, maxDose: 15.0, stepDose: 0.5 }
+                ]
+            },
+            {
+                id: "nitroglycerin",
+                name: "Nitroglycerin",
+                category: "haap",
+                categoryLabel: "Thuốc hạ áp",
+                onset: "1 - 2 phút",
+                duration: "3 - 5 phút (sau khi ngừng truyền)",
+                redose: "Chỉnh liều liên tục",
+                inductionDose: "Cấp cứu phù phổi cấp huyết áp cao / cơn đau thắt ngực: ngậm dưới lưỡi 0.4 mg hoặc xịt 1 - 2 nhát.",
+                maintenanceDose: "Truyền tĩnh mạch liên tục: khởi đầu 5 mcg/phút (hoặc 0.1 - 0.2 mcg/kg/phút). Tăng dần 5 - 10 mcg/phút mỗi 3 - 5 phút cho đến khi có đáp ứng lâm sàng. Liều thông thường 10 - 100 mcg/phút (tối đa 200 mcg/phút).",
+                contraindications: "Huyết áp tâm thu < 90 mmHg, sốc do tim, nhồi máu cơ tim thất phải, tăng áp lực nội sọ chưa kiểm soát, trạng thái giảm thể tích tuần hoàn nặng chưa bù đủ, bệnh nhân đang dùng các thuốc ức chế PDE-5 (Sildenafil/Viagra) trong vòng 24 - 48 giờ.",
+                clinicalNotes: "Dễ xuất hiện hiện tượng lờn thuốc (tolerance) khi truyền liên tục trên 24 giờ. Nitroglycerin có ái lực hấp phụ rất mạnh vào bề mặt nhựa PVC thông thường, khuyến cáo sử dụng dây truyền chuyên dụng không hấp phụ.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mcg/phút",
+                    inductionFactor: 0,
+                    maintenanceFactor: 0.5
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (0.2 mg/mL)", amount: 10, amountUnit: "mg", volume: 50, doseUnit: "mcg/phút", defaultDose: 20, minDose: 5, maxDose: 150, stepDose: 5 },
+                    { name: "Pha đậm đặc (1.0 mg/mL)", amount: 50, amountUnit: "mg", volume: 50, doseUnit: "mcg/phút", defaultDose: 20, minDose: 5, maxDose: 150, stepDose: 5 }
+                ]
+            },
+            {
+                id: "propranolol",
+                name: "Propranolol",
+                category: "haap",
+                categoryLabel: "Thuốc hạ áp",
+                onset: "1 - 5 phút",
+                duration: "2 - 4 giờ (IV)",
+                redose: "Mỗi 4 - 6 giờ",
+                inductionDose: "Cơn bão giáp cấp, nhịp nhanh trên thất kịch phát trơ: 1 - 3 mg IV chậm (tốc độ không vượt quá 1 mg/phút). Tổng liều tối đa không quá 5 mg.",
+                maintenanceDose: "Chủ yếu duy trì bằng đường uống (40 - 160 mg/ngày). Đường IV chỉ dùng bolus ngắt quãng trong các tình huống cấp tính khẩn cấp tại ICU/phòng mổ.",
+                contraindications: "Sốc tim, suy tim trái cấp mất bù chưa kiểm soát, nhịp xoang chậm < 50 l/p, block nhĩ thất độ II-III, co thắt phế quản nặng (hen phế quản hoạt động hoặc COPD nặng).",
+                clinicalNotes: "Là thuốc chẹn beta không chọn lọc. Có thể che lấp các dấu hiệu cảnh báo hạ đường huyết (như run, tim nhanh, ngoại trừ vã mồ hôi). Tránh ngừng thuốc đột ngột ở bệnh nhân mạch vành.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.02,
+                    maintenanceFactor: 0
+                }
+            },
+
+            // Thuốc vận mạch
+            {
+                id: "adrenaline",
+                name: "Adrenaline",
+                category: "vanmach",
+                categoryLabel: "Thuốc vận mạch",
+                onset: "Dưới 1 phút (IV), 5 - 10 phút (tiêm bắp IM)",
+                duration: "5 - 10 phút",
+                redose: "Lặp lại mỗi 3 - 5 phút trong cấp cứu ngừng tuần hoàn",
+                inductionDose: "Ngừng tuần hoàn: 1 mg IV nhanh. Sốc phản vệ: 0.3 - 0.5 mg IM (đùi). Hạ huyết áp nặng/Sốc (Bolus phòng mổ): 10 - 20 mcg IV (pha loãng cực mịn).",
+                maintenanceDose: "Truyền tĩnh mạch liên tục bằng bơm tiêm điện: 0.05 - 0.5 mcg/kg/phút (điều chỉnh liều dựa trên đích huyết áp).",
+                contraindications: "Không có chống chỉ định tuyệt đối trong tình huống cấp cứu hồi sức đe dọa tính mạng. Thận trọng với bệnh tim thiếu máu cục bộ, hẹp đường ra thất trái (HOCM).",
+                clinicalNotes: "Tác dụng kích thích mạnh mẽ lên toàn bộ thụ thể giao cảm alpha-1, beta-1, và beta-2. Gây co mạch ngoại vi mạnh và giãn phế quản rất tốt. Tránh tuyệt đối tiêm động mạch hoặc tiêm lệch ven.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mcg/phút",
+                    inductionFactor: 0,
+                    maintenanceFactor: 0.1
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn 2 ống (0.04 mg/mL)", amount: 2, amountUnit: "mg", volume: 50, doseUnit: "mcg/kg/phút", defaultDose: 0.1, minDose: 0.02, maxDose: 1.0, stepDose: 0.01 },
+                    { name: "Pha đậm đặc 4 ống (0.08 mg/mL)", amount: 4, amountUnit: "mg", volume: 50, doseUnit: "mcg/kg/phút", defaultDose: 0.1, minDose: 0.02, maxDose: 1.0, stepDose: 0.01 }
+                ]
+            },
+            {
+                id: "noradrenaline",
+                name: "Noradrenaline",
+                category: "vanmach",
+                categoryLabel: "Thuốc vận mạch",
+                onset: "1 - 2 phút",
+                duration: "1 - 2 phút (giảm nhanh sau khi ngừng truyền)",
+                redose: "Chỉnh liều liên tục",
+                inductionDose: "Thường không dùng bolus tĩnh mạch trừ các tình huống hạ áp kịch liệt đe dọa tính mạng (Pha cực loãng, bolus liều nhỏ 5 - 10 mcg).",
+                maintenanceDose: "Truyền tĩnh mạch liên tục bằng bơm tiêm điện: Khởi đầu 0.05 - 0.1 mcg/kg/phút. Tăng dần liều để đạt huyết áp động mạch trung bình (MAP) mong muốn (> 65 mmHg).",
+                contraindications: "Hạ huyết áp do giảm thể tích tuần hoàn chưa được bù dịch đầy đủ.",
+                clinicalNotes: "Thuốc lựa chọn hàng đầu trong điều trị sốc nhiễm trùng và sốc giãn mạch. Kích thích ưu thế mạnh trên thụ thể alpha-1 gây co mạch hệ thống mạnh mẽ. Bắt buộc ưu tiên truyền qua catheter tĩnh mạch trung tâm.",
+                isEmergency: true,
+                calculator: {
+                    unit: "mcg/phút",
+                    inductionFactor: 0,
+                    maintenanceFactor: 0.1
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (0.08 mg/mL)", amount: 4, amountUnit: "mg", volume: 50, doseUnit: "mcg/kg/phút", defaultDose: 0.1, minDose: 0.02, maxDose: 1.5, stepDose: 0.01 },
+                    { name: "Pha gấp đôi (0.16 mg/mL)", amount: 8, amountUnit: "mg", volume: 50, doseUnit: "mcg/kg/phút", defaultDose: 0.1, minDose: 0.02, maxDose: 1.5, stepDose: 0.01 }
+                ]
+            },
+            {
+                id: "ephedrine",
+                name: "Ephedrine",
+                category: "vanmach",
+                categoryLabel: "Thuốc vận mạch",
+                onset: "1 - 2 phút (IV)",
+                duration: "10 - 15 phút",
+                redose: "Mỗi 5 - 10 phút tùy theo đáp ứng lâm sàng",
+                inductionDose: "Liều Bolus tĩnh mạch: 5 - 10 mg IV chậm (thường pha loãng 1 ống 30mg thành 10ml nước cất để lấy liều 3mg/ml). Lặp lại nếu cần thiết, tổng liều tối đa không vượt quá 150 mg.",
+                maintenanceDose: "Hầu như không sử dụng duy trì đường truyền tĩnh mạch liên tục do xuất hiện nhanh hiện tượng quen thuốc (tachyphylaxis/nhờn thuốc nhanh).",
+                contraindications: "Tăng huyết áp chưa kiểm soát, cường giáp chưa điều trị ổn định, bệnh mạch vành nặng.",
+                clinicalNotes: "Thuốc cường giao cảm tác dụng gián tiếp chủ yếu thông qua việc kích thích giải phóng Norepinephrine nội sinh. Làm tăng cả huyết áp hệ thống lẫn tần số tim. Là thuốc vận mạch hàng đầu điều trị hạ huyết áp do gây tê tủy sống trong sản khoa.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.1, // Dùng để ước tính liều bolus khuyến nghị theo kg
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "phenylephrine",
+                name: "Phenylephrine",
+                category: "vanmach",
+                categoryLabel: "Thuốc vận mạch",
+                onset: "1 - 2 phút (IV)",
+                duration: "15 - 20 phút",
+                redose: "Mỗi 10 - 15 phút",
+                inductionDose: "Liều Bolus tĩnh mạch: 40 - 100 mcg IV chậm (pha loãng từ dung dịch chuẩn 10mg/ml để tránh dùng quá liều).",
+                maintenanceDose: "Truyền tĩnh mạch liên tục: 0.1 - 0.5 mcg/kg/phút hoặc 20 - 100 mcg/phút flat rate bằng bơm tiêm điện.",
+                contraindications: "Nhịp tim chậm nghiêm trọng (< 50 l/p), block nhĩ thất hoàn toàn, bệnh mạch vành nặng bồi hoàn kém.",
+                clinicalNotes: "Thuốc đồng vận chọn lọc trực tiếp lên thụ thể alpha-1 adrenergic. Gây co mạch mạnh mẽ làm tăng huyết áp, đồng thời kích hoạt phản xạ dây phế vị gây chậm nhịp tim phản xạ (reflex bradycardia).",
+                isEmergency: false,
+                calculator: {
+                    unit: "mcg",
+                    inductionFactor: 1.5, // Liều bolus trung bình ~1.5 mcg/kg
+                    maintenanceFactor: 0.3 // Liều duy trì trung bình ~0.3 mcg/kg/phút
+                },
+                pumpPresets: [
+                    { name: "Pha chuẩn (0.2 mg/mL)", amount: 10, amountUnit: "mg", volume: 50, doseUnit: "mcg/phút", defaultDose: 50, minDose: 10, maxDose: 150, stepDose: 5 }
+                ]
+            },
+
+            // Thuốc chống nôn
+            {
+                id: "ondansetron",
+                name: "Ondansetron",
+                category: "chongnon",
+                categoryLabel: "Thuốc chống nôn",
+                onset: "15 - 30 phút (IV)",
+                duration: "4 - 8 giờ",
+                redose: "Mỗi 8 giờ nếu cần",
+                inductionDose: "Dự phòng nôn và buồn nôn sau mổ (PONV): 4 - 8 mg IV chậm trong 2 - 5 phút (thường tiêm trước khởi mê hoặc 30 phút trước khi kết thúc ca mổ).",
+                maintenanceDose: "Điều trị nôn sau mổ hoặc do hóa trị: 4 mg IV chậm hoặc tiêm bắp IM. Có thể chuyển sang đường uống 8 mg mỗi 8 - 12 giờ.",
+                contraindications: "Mẫn cảm với Ondansetron hoặc các chất đối kháng thụ thể 5-HT3 khác. Chống chỉ định tuyệt đối phối hợp chung với Apomorphine (nguy cơ tụt huyết áp nặng và mất ý thức). Hội chứng khoảng QT kéo dài bẩm sinh.",
+                clinicalNotes: "Có thể kéo dài khoảng QT trên điện tâm đồ (thận trọng khi phối hợp với các thuốc kéo dài QT khác hoặc bệnh nhân có rối loạn điện giải). Tác dụng phụ thường gặp là đau đầu nhẹ, táo bón. Thuốc không gây buồn ngủ hay tác dụng ngoại tháp.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.1, // ~ 6mg cho bệnh nhân 60kg
+                    maintenanceFactor: 0
+                }
+            },
+            {
+                id: "metoclopramide",
+                name: "Metoclopramide",
+                category: "chongnon",
+                categoryLabel: "Thuốc chống nôn",
+                onset: "1 - 3 phút (IV), 10 - 15 phút (IM)",
+                duration: "1 - 2 giờ",
+                redose: "Mỗi 6 - 8 giờ",
+                inductionDose: "Dự phòng hoặc điều trị nôn/buồn nôn cấp tính: 10 mg IV chậm (trong ít nhất 1 - 2 phút) hoặc IM. Có thể lặp lại tối đa 3 lần/ngày.",
+                maintenanceDose: "Duy trì điều trị: 10 mg IV/IM hoặc uống mỗi 8 giờ (Liều tối đa hàng ngày là 30 mg hoặc 0.5 mg/kg).",
+                contraindications: "Xuất huyết tiêu hóa, tắc ruột cơ học hoặc thủng ruột (kích thích động ruột có thể gây tai biến nghiêm trọng); U tủy thượng thận (Pheochromocytoma - nguy cơ bùng phát cơn tăng huyết áp ác tính); Tiền sử động kinh hoặc đang dùng các thuốc gây phản ứng ngoại tháp; Trẻ em dưới 1 tuổi.",
+                clinicalNotes: "Nguy cơ gây hội chứng ngoại tháp (co cứng cơ cổ, loạn trương lực cơ cấp), đặc biệt ở bệnh nhân trẻ tuổi và trẻ em (xử trí bằng Diphenhydramine hoặc Promethazine). Bắt buộc tiêm tĩnh mạch thật chậm, tiêm quá nhanh có thể gây cảm giác bồn chồn, lo âu cấp tính dữ dội (Akathisia). Tránh dùng kéo dài trên 5 ngày liên tiếp.",
+                isEmergency: false,
+                calculator: {
+                    unit: "mg",
+                    inductionFactor: 0.15, // ~ 9mg cho bệnh nhân 60kg (liều chuẩn khoảng 10mg)
+                    maintenanceFactor: 0
+                }
+            }
+        ];
+
+        // App State
+        let currentSearchQuery = "";
+        let selectedCategoryId = "all";
+        let isEmergencyFilterActive = false;
+        let isFavoriteFilterActive = false;
+        let selectedDrugId = null;
+        let favorites = JSON.parse(localStorage.getItem('clinica_favorites') || '[]');
+
+        // Build category grid on load
+        function initCategories() {
+            const categories = [
+                { id: "all", label: "Tất cả thuốc", icon: "database" },
+                { id: "giamdau", label: "Giảm đau", icon: "heart" },
+                { id: "opioid", label: "Opioids", icon: "activity" },
+                { id: "metinhmach", label: "Gây mê tĩnh mạch", icon: "droplet" },
+                { id: "benzodiazepines", label: "Benzodiazepines", icon: "moon" },
+                { id: "gianco", label: "Giãn cơ", icon: "scissors" },
+                { id: "hoaigiai", label: "Hóa giải giãn cơ", icon: "key-round" },
+                { id: "chongloannhip", label: "Chống loạn nhịp", icon: "heart-pulse" },
+                { id: "thuocte", label: "Thuốc tê", icon: "syringe" },
+                { id: "haap", label: "Thuốc hạ áp", icon: "trending-down" },
+                { id: "vanmach", label: "Thuốc vận mạch", icon: "activity" },
+                { id: "chongnon", label: "Thuốc chống nôn", icon: "pill" }
+            ];
+
+            const grid = document.getElementById('categoryGrid');
+            grid.innerHTML = '';
+            
+            categories.forEach(cat => {
+                const isSelected = selectedCategoryId === cat.id;
+                const btn = document.createElement('button');
+                btn.className = `flex items-center gap-2 p-1.5 px-2.5 rounded-lg border text-left transition text-xs font-semibold ${
+                    isSelected 
+                        ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border-transparent shadow-xs' 
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                }`;
+                btn.onclick = () => selectCategory(cat.id);
+                btn.innerHTML = `
+                    <div class="p-1 rounded flex-shrink-0 ${isSelected ? 'bg-white/20' : 'bg-slate-200/50'}">
+                        <i data-lucide="${cat.icon}" class="w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}"></i>
+                    </div>
+                    <span class="leading-none text-[11px]">${cat.label}</span>
+                `;
+                grid.appendChild(btn);
+            });
+            lucide.createIcons();
+            updateFavCount();
+        }
+
+        // Select Category Filter
+        function selectCategory(categoryId) {
+            selectedCategoryId = categoryId;
+            initCategories();
+            renderDrugList();
+        }
+
+        // Search inputs
+        function handleSearch() {
+            const input = document.getElementById('searchInput');
+            currentSearchQuery = input.value.trim().toLowerCase();
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (currentSearchQuery) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderDrugList();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = "";
+            currentSearchQuery = "";
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            handleSearch();
+        }
+
+        // Fast Action Toggles
+        function toggleEmergencyFilter() {
+            isEmergencyFilterActive = !isEmergencyFilterActive;
+            const btn = document.getElementById('emergencyBtn');
+            if (isEmergencyFilterActive) {
+                btn.className = "flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white hover:bg-rose-700 text-xs font-bold rounded-lg border border-transparent shadow transition whitespace-nowrap";
+            } else {
+                btn.className = "flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold rounded-lg border border-rose-200 transition whitespace-nowrap";
+            }
+            renderDrugList();
+        }
+
+        function toggleFavoriteFilter() {
+            isFavoriteFilterActive = !isFavoriteFilterActive;
+            const btn = document.getElementById('favoriteFilterBtn');
+            if (isFavoriteFilterActive) {
+                btn.className = "flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white hover:bg-amber-600 text-xs font-bold rounded-lg border border-transparent shadow transition whitespace-nowrap";
+            } else {
+                btn.className = "flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-lg border border-amber-200 transition whitespace-nowrap";
+            }
+            renderDrugList();
+        }
+
+        function resetAllFilters() {
+            selectedCategoryId = "all";
+            currentSearchQuery = "";
+            document.getElementById('searchInput').value = "";
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            
+            isEmergencyFilterActive = false;
+            const emBtn = document.getElementById('emergencyBtn');
+            emBtn.className = "flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold rounded-lg border border-rose-200 transition whitespace-nowrap";
+
+            isFavoriteFilterActive = false;
+            const favBtn = document.getElementById('favoriteFilterBtn');
+            favBtn.className = "flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-lg border border-amber-200 transition whitespace-nowrap";
+
+            initCategories();
+            renderDrugList();
+            showToast("Đã xóa tất cả bộ lọc", "info");
+        }
+
+        // Render Drug Cards list on left
+        function renderDrugList() {
+            const listContainer = document.getElementById('drugList');
+            listContainer.innerHTML = '';
+
+            // Filter calculation with defensive fallback strings to avoid "TypeError: Cannot read properties of undefined"
+            const filteredDrugs = DRUG_DATABASE.filter(drug => {
+                // Category match
+                const matchesCategory = selectedCategoryId === 'all' || drug.category === selectedCategoryId;
+                
+                // Safe names to prevent runtime exceptions
+                const drugName = (drug.name || "").toLowerCase();
+                const categoryLabel = (drug.categoryLabel || "").toLowerCase();
+
+                // Search query match (search in generic name, and category)
+                const matchesSearch = drugName.includes(currentSearchQuery) || 
+                                      categoryLabel.includes(currentSearchQuery);
+                
+                // Emergency filter match
+                const matchesEmergency = !isEmergencyFilterActive || drug.isEmergency === true;
+
+                // Favorite filter match
+                const matchesFav = !isFavoriteFilterActive || favorites.includes(drug.id);
+
+                return matchesCategory && matchesSearch && matchesEmergency && matchesFav;
+            });
+
+            // Update drug count label
+            document.getElementById('drugCountLabel').innerText = `Danh sách thuốc (${filteredDrugs.length})`;
+
+            if (filteredDrugs.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-10 bg-white rounded-lg border border-dashed border-slate-300 p-6">
+                        <i data-lucide="info" class="w-8 h-8 text-slate-400 mx-auto mb-2"></i>
+                        <p class="text-xs font-medium text-slate-500">Không tìm thấy loại thuốc phù hợp bộ lọc.</p>
+                        <button onclick="resetAllFilters()" class="text-xs text-indigo-600 font-bold hover:underline mt-2">Xóa bộ lọc để quay lại</button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filteredDrugs.forEach(drug => {
+                const isSelected = selectedDrugId === drug.id;
+                const isFav = favorites.includes(drug.id);
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    isSelected 
+                        ? 'bg-indigo-50/70 border-indigo-400 ring-2 ring-indigo-100 shadow-sm' 
+                        : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 shadow-xs'
+                }`;
+                card.onclick = () => selectDrug(drug.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 block">${drug.categoryLabel || ""}</span>
+                            <h4 class="text-sm font-bold text-slate-900 mt-0.5 flex items-center gap-1.5">
+                                ${drug.name || ""}
+                                ${drug.isEmergency ? '<span class="w-2 h-2 rounded-full bg-rose-500" title="Thuốc cấp cứu"></span>' : ''}
+                            </h4>
+                        </div>
+                        <button onclick="toggleFavoriteInline(event, '${drug.id}')" class="text-slate-300 hover:text-amber-500 transition">
+                            <i data-lucide="star" class="w-4 h-4 ${isFav ? 'fill-amber-500 text-amber-500' : ''}"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-4 mt-3 pt-2.5 border-t border-slate-100/80 text-[11px] text-slate-500">
+                        <span class="flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i> ${drug.onset || "-"}</span>
+                        <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i> ${drug.duration || "-"}</span>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // Select and Display Drug Detail
+        function selectDrug(drugId) {
+            selectedDrugId = drugId;
+            renderDrugList();
+
+            const drug = DRUG_DATABASE.find(d => d.id === drugId);
+            if (!drug) return;
+
+            // Hide welcome screen, show details
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            const detailViewEl = document.getElementById('detailView');
+            detailViewEl.classList.remove('hidden');
+            detailViewEl.classList.add('flex');
+
+            // Populate Text Details with safety checks
+            const detailCategoryBadge = document.getElementById('detailCategoryBadge');
+            const detailGenericName = document.getElementById('detailGenericName');
+            const detailOnset = document.getElementById('detailOnset');
+            const detailDuration = document.getElementById('detailDuration');
+            const detailRedose = document.getElementById('detailRedose');
+            const detailInductionDose = document.getElementById('detailInductionDose');
+            const detailMaintenanceDose = document.getElementById('detailMaintenanceDose');
+            const detailContraindications = document.getElementById('detailContraindications');
+            const detailClinicalNotes = document.getElementById('detailClinicalNotes');
+
+            if (detailCategoryBadge) detailCategoryBadge.innerText = drug.categoryLabel || "";
+            if (detailGenericName) detailGenericName.innerText = drug.name || "";
+            if (detailOnset) detailOnset.innerText = drug.onset || "-";
+            if (detailDuration) detailDuration.innerText = drug.duration || "-";
+            if (detailRedose) detailRedose.innerText = drug.redose || "-";
+            if (detailInductionDose) detailInductionDose.innerText = drug.inductionDose || "-";
+            if (detailMaintenanceDose) detailMaintenanceDose.innerText = drug.maintenanceDose || "-";
+            if (detailContraindications) detailContraindications.innerText = drug.contraindications || "-";
+            if (detailClinicalNotes) detailClinicalNotes.innerText = drug.clinicalNotes || "-";
+
+            // Handle Favorited Heart Button on Detail
+            const isFav = favorites.includes(drug.id);
+            const favBtn = document.getElementById('detailFavBtn');
+            if (favBtn) {
+                if (isFav) {
+                    favBtn.innerHTML = `<i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>`;
+                } else {
+                    favBtn.innerHTML = `<i data-lucide="star" class="w-5 h-5 text-white"></i>`;
+                }
+            }
+
+            // Setup Syringe Pump Calculator if applicable
+            const pumpSection = document.getElementById('syringePumpSection');
+            if (drug.pumpPresets && drug.pumpPresets.length > 0) {
+                pumpSection.classList.remove('hidden');
+                initSyringePumpWidget(drug);
+            } else {
+                pumpSection.classList.add('hidden');
+            }
+
+            // Calculate dosages based on current input weight
+            calculateDosageForWeight(drug);
+
+            // Scroll detail container back to top
+            document.getElementById('detailContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            lucide.createIcons();
+        }
+
+        // Syringe Pump Widget Initializer
+        function initSyringePumpWidget(drug) {
+            const presetsContainer = document.getElementById('pumpPresetsContainer');
+            presetsContainer.innerHTML = '';
+
+            // Render preset buttons
+            drug.pumpPresets.forEach((preset, index) => {
+                const btn = document.createElement('button');
+                btn.className = `px-2.5 py-1 bg-white hover:bg-sky-100 text-sky-800 text-[10px] font-bold rounded-lg border border-sky-200 transition shadow-2xs`;
+                btn.innerText = preset.name;
+                btn.onclick = () => applyPumpPreset(drug, index);
+                presetsContainer.appendChild(btn);
+            });
+
+            // Apply default/first preset values
+            applyPumpPreset(drug, 0);
+        }
+
+        // Apply selected recipe/preset to the pump inputs
+        function applyPumpPreset(drug, index) {
+            const preset = drug.pumpPresets[index];
+            if (!preset) return;
+
+            document.getElementById('pumpAmountInput').value = preset.amount;
+            document.getElementById('pumpAmountUnitLabel').innerText = preset.amountUnit;
+            document.getElementById('pumpVolumeInput').value = preset.volume;
+            document.getElementById('pumpDoseInput').value = preset.defaultDose;
+            document.getElementById('pumpDoseUnitLabel').innerText = preset.doseUnit;
+
+            // Configure slider constraints
+            const slider = document.getElementById('pumpDoseSlider');
+            slider.min = preset.minDose;
+            slider.max = preset.maxDose;
+            slider.step = preset.stepDose;
+            slider.value = preset.defaultDose;
+
+            recalculatePumpRate();
+        }
+
+        // Sync slider movement with number input box
+        function syncPumpInputFromSlider() {
+            const sliderValue = document.getElementById('pumpDoseSlider').value;
+            document.getElementById('pumpDoseInput').value = sliderValue;
+            recalculatePumpRate();
+        }
+
+        // Sync typing in input box with slider position
+        function syncPumpSliderFromInput() {
+            const inputValue = parseFloat(document.getElementById('pumpDoseInput').value) || 0;
+            document.getElementById('pumpDoseSlider').value = inputValue;
+            recalculatePumpRate();
+        }
+
+        // Main Core Syringe Pump Math Converter
+        function recalculatePumpRate() {
+            const drug = DRUG_DATABASE.find(d => d.id === selectedDrugId);
+            if (!drug || !drug.pumpPresets) return;
+
+            const weight = parseFloat(document.getElementById('globalWeight').value) || 60;
+            const amount = parseFloat(document.getElementById('pumpAmountInput').value) || 0;
+            const volume = parseFloat(document.getElementById('pumpVolumeInput').value) || 50;
+            const targetDose = parseFloat(document.getElementById('pumpDoseInput').value) || 0;
+
+            if (amount <= 0 || volume <= 0 || targetDose <= 0) {
+                document.getElementById('pumpResultValue').innerText = "0.0";
+                document.getElementById('pumpConcLabel').innerText = "Chưa xác định";
+                return;
+            }
+
+            const currentPreset = drug.pumpPresets[0]; // Fetch meta-units
+            const amountUnit = currentPreset.amountUnit; // "mg" or "mcg"
+            const doseUnit = currentPreset.doseUnit;     // "mcg/kg/phút", "mg/kg/giờ", etc.
+
+            // 1. Calculate Concentration in both units
+            let concMgMl = 0;
+            let concMcgMl = 0;
+
+            if (amountUnit === 'mg') {
+                concMgMl = amount / volume;
+                concMcgMl = (amount * 1000) / volume;
+            } else { // "mcg" (e.g. Dexmedetomidine)
+                concMgMl = (amount / 1000) / volume;
+                concMcgMl = amount / volume;
+            }
+
+            // Render Concentration Label
+            let concText = "";
+            if (amountUnit === 'mg') {
+                concText = `${concMgMl.toFixed(3).replace(/\.?0+$/, '')} mg/mL`;
+                if (concMgMl < 0.1) {
+                    concText += ` (${concMcgMl.toFixed(1).replace(/\.?0+$/, '')} mcg/mL)`;
+                }
+            } else {
+                concText = `${concMcgMl.toFixed(1).replace(/\.?0+$/, '')} mcg/mL`;
+            }
+            document.getElementById('pumpConcLabel').innerText = concText;
+
+            // 2. Compute Infusion Speed (mL/hour) based on clinical formulas
+            let rateMlh = 0;
+
+            if (doseUnit === "mcg/kg/phút") {
+                // Rate (mL/h) = (Dose * Weight * 60) / Concentration (mcg/mL)
+                rateMlh = (targetDose * weight * 60) / concMcgMl;
+            } else if (doseUnit === "mcg/kg/giờ") {
+                // Rate (mL/h) = (Dose * Weight) / Concentration (mcg/mL)
+                rateMlh = (targetDose * weight) / concMcgMl;
+            } else if (doseUnit === "mg/kg/giờ") {
+                // Rate (mL/h) = (Dose * Weight) / Concentration (mg/mL)
+                rateMlh = (targetDose * weight) / concMgMl;
+            } else if (doseUnit === "mcg/phút") {
+                // Rate (mL/h) = (Dose * 60) / Concentration (mcg/mL)
+                rateMlh = (targetDose * 60) / concMcgMl;
+            } else if (doseUnit === "mg/giờ") {
+                // Rate (mL/h) = Dose (mg/h) / Concentration (mg/mL)
+                rateMlh = targetDose / concMgMl;
+            } else if (doseUnit === "mg/phút") {
+                // Rate (mL/h) = (Dose * 60) / Concentration (mg/mL)
+                rateMlh = (targetDose * 60) / concMgMl;
+            }
+
+            // Output guardrails
+            if (isNaN(rateMlh) || !isFinite(rateMlh) || rateMlh < 0) {
+                rateMlh = 0;
+            }
+
+            document.getElementById('pumpResultValue').innerText = rateMlh.toFixed(1);
+        }
+
+        // Weight Dosage Calculations
+        function calculateDosageForWeight(drug) {
+            const weight = parseFloat(document.getElementById('globalWeight').value) || 60;
+            const resultsContainer = document.getElementById('calcResults');
+            const calcWeightLabel = document.getElementById('calcWeightLabel');
+            
+            if (!resultsContainer) return;
+            resultsContainer.innerHTML = '';
+            
+            if (calcWeightLabel) {
+                calcWeightLabel.innerText = `${weight} kg`;
+            }
+
+            if (!drug.calculator || (drug.calculator.inductionFactor === 0 && drug.calculator.maintenanceFactor === 0 && !["nicardipine", "nitroglycerin", "adrenaline", "noradrenaline", "phenylephrine"].includes(drug.id))) {
+                resultsContainer.innerHTML = `
+                    <p class="text-xs text-slate-500 italic py-1">Không có chỉ định tính liều tự động theo cân nặng cho loại thuốc này. Vui lòng tham khảo hướng dẫn liều lượng chuẩn bên dưới.</p>
+                `;
+                return;
+            }
+
+            const unit = drug.calculator.unit || "mg";
+            
+            // Standard Dose Calculations
+            const primaryInduction = (drug.calculator.inductionFactor * weight).toFixed(1).replace('.0', '');
+            
+            // Render specific calculators based on drug
+            if (drug.category === "giamdau") {
+                const singleDose = Math.min((drug.calculator.inductionFactor * weight), drug.id === "paracetamol" ? 1000 : (drug.id === "ketorolac" ? 30 : 75)).toFixed(0);
+                const maxDaily = drug.id === "paracetamol" ? "4.0 g (4000 mg)" : (drug.id === "ketorolac" ? "120 mg (60 mg ở người già/suy thận)" : (drug.id === "nefopam" ? "120 mg" : "150 mg"));
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Liều đề xuất lâm sàng (${drug.calculator.inductionFactor} mg/kg)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${singleDose} ${unit}</span>
+                            <span class="block text-[10px] text-slate-400 italic">Mỗi liều đơn (đã giới hạn liều trần)</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-rose-600 uppercase">Giới hạn tối đa 24 giờ</span>
+                            <span class="text-lg font-extrabold text-rose-600">${maxDaily}</span>
+                            <span class="block text-[10px] text-slate-400 italic">Tránh quá liều gây độc nội tạng</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "propofol") {
+                const mainMin = (4 * weight).toFixed(0);
+                const mainMax = (12 * weight).toFixed(0);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Liều Khởi mê (2 mg/kg)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${primaryInduction} ${unit}</span>
+                            <span class="block text-[10px] text-slate-400 italic">Tiêm tĩnh mạch chậm</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Duy trì (4 - 12 mg/kg/h)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${mainMin} - ${mainMax} ${unit}/giờ</span>
+                            <span class="block text-[10px] text-slate-400 italic">Truyền bơm tiêm điện</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "amiodarone") {
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-rose-600 uppercase">Ngừng tuần hoàn (VF/VT mất mạch)</span>
+                            <span class="text-base font-extrabold text-rose-700">300 mg IV bolus</span>
+                            <span class="block text-[10px] text-slate-400 italic">Mất mạch: Bolus trực tiếp, lặp lại 150mg</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Duy trì phẳng (Không đổi)</span>
+                            <span class="text-lg font-extrabold text-slate-900">1.0 - 0.5 mg/phút</span>
+                            <span class="block text-[10px] text-slate-400 italic">Truyền máy liên tục</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "adrenaline") {
+                const minRate = (0.05 * weight).toFixed(1);
+                const maxRate = (0.3 * weight).toFixed(1);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-rose-600 uppercase">Hồi sức tuần hoàn / Sốc phản vệ</span>
+                            <span class="text-base font-extrabold text-rose-700">1mg IV / 0.3-0.5mg IM</span>
+                            <span class="block text-[9px] text-slate-400 italic">Liều cố định khẩn cấp</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Truyền duy trì (0.05 - 0.3 mcg/kg/phút)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${minRate} - ${maxRate} mcg/phút</span>
+                            <span class="block text-[9px] text-slate-400 italic">Tương đương: ${(minRate * 60 / 1000).toFixed(2)} - ${(maxRate * 60 / 1000).toFixed(2)} mg/giờ</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "noradrenaline") {
+                const minRate = (0.05 * weight).toFixed(1);
+                const maxRate = (0.5 * weight).toFixed(1);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Tốc độ truyền (0.05 - 0.5 mcg/kg/phút)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${minRate} - ${maxRate} mcg/phút</span>
+                            <span class="block text-[9px] text-slate-400 italic">Chỉnh liều dựa trên HA động mạch</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-indigo-600 uppercase font-medium">Bơm tiêm điện (Tốc độ mg/giờ)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${(minRate * 60 / 1000).toFixed(2)} - ${(maxRate * 60 / 1000).toFixed(2)} mg/giờ</span>
+                            <span class="block text-[9px] text-slate-400 italic">Pha loãng cùng Glucose 5% hoặc NaCl 0.9%</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "ephedrine") {
+                const recDose = (0.1 * weight).toFixed(1);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Liều gợi ý Bolus (0.1 mg/kg)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${recDose} mg</span>
+                            <span class="block text-[9px] text-slate-400 italic">Thường Bolus 5 - 10 mg chậm</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-rose-600 uppercase">Tối đa 24 giờ</span>
+                            <span class="text-lg font-extrabold text-rose-600">150 mg</span>
+                            <span class="block text-[9px] text-slate-400 italic">Đề phòng hiện tượng nhờn thuốc</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "phenylephrine") {
+                const bolusMin = (0.5 * weight).toFixed(0);
+                const bolusMax = (1.5 * weight).toFixed(0);
+                const minRate = (0.1 * weight).toFixed(1);
+                const maxRate = (0.5 * weight).toFixed(1);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Bolus theo cân nặng (0.5 - 1.5 mcg/kg)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${bolusMin} - ${bolusMax} mcg</span>
+                            <span class="block text-[9px] text-slate-400 italic">Thường dùng lâm sàng: 40 - 100 mcg</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Truyền duy trì (0.1 - 0.5 mcg/kg/phút)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${minRate} - ${maxRate} mcg/phút</span>
+                            <span class="block text-[9px] text-slate-400 italic">Tương đương: ${(minRate * 60 / 1000).toFixed(2)} - ${(maxRate * 60 / 1000).toFixed(2)} mg/giờ</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "rocuronium") {
+                const rsiDose = (1.2 * weight).toFixed(1).replace('.0', '');
+                const maintDose = (0.15 * weight).toFixed(1).replace('.0', '');
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-white p-2 rounded border border-emerald-100 shadow-sm text-center">
+                            <span class="block text-[9px] font-bold text-emerald-600 uppercase">Khởi mê (0.6 mg/kg)</span>
+                            <span class="text-base font-extrabold text-slate-900">${primaryInduction} ${unit}</span>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-emerald-100 shadow-sm text-center">
+                            <span class="block text-[9px] font-bold text-amber-600 uppercase">RSI (1.2 mg/kg)</span>
+                            <span class="text-base font-extrabold text-slate-900">${rsiDose} ${unit}</span>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-emerald-100 shadow-sm text-center">
+                            <span class="block text-[9px] font-bold text-teal-600 uppercase">Nhắc lại (0.15 mg/kg)</span>
+                            <span class="text-base font-extrabold text-slate-900">${maintDose} ${unit}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "sugammadex") {
+                const deepDose = (4 * weight).toFixed(1).replace('.0', '');
+                const immediateDose = (16 * weight).toFixed(1).replace('.0', '');
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-white p-2 rounded border border-emerald-100 shadow-sm text-center">
+                            <span class="block text-[9px] font-bold text-emerald-600 uppercase">Hóa giải thường (2 mg/kg)</span>
+                            <span class="text-base font-extrabold text-slate-900">${primaryInduction} ${unit}</span>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-emerald-100 shadow-sm text-center">
+                            <span class="block text-[9px] font-bold text-amber-600 uppercase">Hóa giải sâu (4 mg/kg)</span>
+                            <span class="text-base font-extrabold text-slate-900">${deepDose} ${unit}</span>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-emerald-100 shadow-sm text-center">
+                            <span class="block text-[9px] font-bold text-rose-600 uppercase">Tức thì (16 mg/kg)</span>
+                            <span class="text-base font-extrabold text-slate-900">${immediateDose} ${unit}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "neostigmine") {
+                const atropineDose = (0.02 * weight).toFixed(2);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Neostigmine (0.05 mg/kg)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${primaryInduction} ${unit}</span>
+                            <span class="block text-[10px] text-slate-400 italic">Liều giải giãn cơ</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-rose-600 uppercase">Atropine đi kèm (0.02 mg/kg)</span>
+                            <span class="text-lg font-extrabold text-rose-600">${atropineDose} mg</span>
+                            <span class="block text-[10px] text-slate-400 italic">Bắt buộc tiêm cùng tránh chậm nhịp</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "nicardipine") {
+                const minRateMcg = (0.5 * weight).toFixed(0);
+                const maxRateMcg = (5.0 * weight).toFixed(0);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Liều Khởi đầu Truyền (Flat)</span>
+                            <span class="text-lg font-extrabold text-slate-900">3 - 5 mg/giờ</span>
+                            <span class="block text-[10px] text-slate-400 italic">Chỉnh liều mỗi 15 phút</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Gợi ý theo cân nặng (0.5-5 mcg/kg/phút)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${minRateMcg} - ${maxRateMcg} mcg/phút</span>
+                            <span class="block text-[10px] text-slate-400 italic">Tương đương: ${(minRateMcg * 60 / 1000).toFixed(1)} - ${(maxRateMcg * 60 / 1000).toFixed(1)} mg/giờ</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "nitroglycerin") {
+                const minRate = (0.1 * weight).toFixed(1).replace('.0', '');
+                const maxRate = (2.0 * weight).toFixed(0);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Khởi đầu truyền tĩnh mạch</span>
+                            <span class="text-lg font-extrabold text-slate-900">5 mcg/phút</span>
+                            <span class="block text-[10px] text-slate-400 italic">Tương đương 0.3 mg/giờ</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Tốc độ theo cân nặng (0.1-2 mcg/kg/phút)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${minRate} - ${maxRate} mcg/phút</span>
+                            <span class="block text-[10px] text-slate-400 italic">Tăng liều mỗi 3-5 phút theo đáp ứng</span>
+                        </div>
+                    </div>
+                `;
+            } else if (drug.id === "propranolol") {
+                const minDose = (0.01 * weight).toFixed(2);
+                const maxDose = (0.05 * weight).toFixed(2);
+                resultsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Liều Bolus Cấp cứu</span>
+                            <span class="text-lg font-extrabold text-slate-900">1 - 3 mg</span>
+                            <span class="block text-[10px] text-slate-400 italic">Tiêm IV cực chậm (&lt; 1mg/phút)</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase">Ước tính theo cân nặng (0.01-0.05 mg/kg)</span>
+                            <span class="text-lg font-extrabold text-slate-900">${minDose} - ${maxDose} mg</span>
+                            <span class="block text-[10px] text-slate-400 italic">Không vượt quá liều đơn tối đa 5 mg</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Default Layout for general drugs
+                const secondaryVal = (drug.calculator.maintenanceFactor * weight).toFixed(1).replace('.0', '');
+                const showSecondary = drug.calculator.maintenanceFactor > 0;
+                resultsContainer.innerHTML = `
+                    <div class="grid ${showSecondary ? 'grid-cols-2' : 'grid-cols-1'} gap-3">
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Liều Khởi mê / Tấn công</span>
+                            <span class="text-lg font-extrabold text-slate-900">${primaryInduction} ${unit}</span>
+                        </div>
+                        ${showSecondary ? `
+                        <div class="bg-white p-2.5 rounded border border-emerald-100 shadow-sm">
+                            <span class="block text-[10px] font-bold text-teal-600 uppercase font-medium">Liều Duy trì gợi ý</span>
+                            <span class="text-lg font-extrabold text-slate-900">${secondaryVal} ${unit}/giờ</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        // Global weight inputs
+        function updateCalculations(weightVal) {
+            // Guardrail constraint check
+            if (weightVal <= 0 || weightVal > 300) return;
+            
+            if (selectedDrugId) {
+                const drug = DRUG_DATABASE.find(d => d.id === selectedDrugId);
+                if (drug) {
+                    calculateDosageForWeight(drug);
+                    recalculatePumpRate();
+                }
+            }
+        }
+
+        // Favorite Management
+        function toggleFavoriteInline(event, drugId) {
+            event.stopPropagation(); // Stop trigger select event
+            const idx = favorites.indexOf(drugId);
+            if (idx > -1) {
+                favorites.splice(idx, 1);
+                showToast("Đã xóa khỏi mục yêu thích", "info");
+            } else {
+                favorites.push(drugId);
+                showToast("Đã thêm vào mục yêu thích", "success");
+            }
+            localStorage.setItem('clinica_favorites', JSON.stringify(favorites));
+            updateFavCount();
+            renderDrugList();
+            
+            // Sync with detail view if currently open
+            if (selectedDrugId === drugId) {
+                selectDrug(drugId);
+            }
+        }
+
+        function toggleFavoriteActive() {
+            if (!selectedDrugId) return;
+            const idx = favorites.indexOf(selectedDrugId);
+            if (idx > -1) {
+                favorites.splice(idx, 1);
+                showToast("Đã xóa khỏi mục yêu thích", "info");
+            } else {
+                favorites.push(selectedDrugId);
+                showToast("Đã thêm vào mục yêu thích", "success");
+            }
+            localStorage.setItem('clinica_favorites', JSON.stringify(favorites));
+            updateFavCount();
+            renderDrugList();
+            selectDrug(selectedDrugId);
+        }
+
+        function updateFavCount() {
+            const countEl = document.getElementById('favCount');
+            if (countEl) {
+                countEl.innerText = favorites.length;
+            }
+        }
+
+        // Mobile Detail View Closer helper
+        function closeDetailMobile() {
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('flex');
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            selectedDrugId = null;
+            renderDrugList();
+        }
+
+        // Beautiful Toast message implementation
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-slate-900 text-white";
+            let icon = "info";
+            if (type === "success") {
+                bgClass = "bg-emerald-600 text-white";
+                icon = "check-circle";
+            } else if (type === "error") {
+                bgClass = "bg-rose-600 text-white";
+                icon = "alert-triangle";
+            }
+
+            toast.className = `${bgClass} flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-xs font-semibold tracking-wide transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-4 h-4"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Slide up & in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize App on Window Load
+        window.onload = function () {
+            initCategories();
+            renderDrugList();
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
